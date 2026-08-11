@@ -5,39 +5,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Antioch Cemetery — Find a Plot</title>
 <style>
+  * { box-sizing: border-box; }
   body { font-family: -apple-system, Arial, sans-serif; margin: 0; background: #f4f4f2; color: #222; }
-  header { background: #2f4f3f; color: white; padding: 16px 24px; display: flex; align-items: center; gap: 10px; }
-  header h1 { font-size: 1.3em; margin: 0; font-weight: 600; }
-  main { max-width: 1000px; margin: 20px auto; padding: 0 16px; }
-  .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-  .search-bar input { flex: 1; padding: 10px; font-size: 1em; border: 1px solid #bbb; border-radius: 4px; }
-  .search-bar button { padding: 10px 18px; font-size: 1em; background: #2f4f3f; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  #results { margin-bottom: 14px; }
-  .result-card { background: white; padding: 12px 16px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 8px; cursor: pointer; }
-  .result-card:hover { background: #f0f5f0; }
+  header { background: #2f4f3f; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 1.1em; margin: 0; font-weight: 600; }
+  #top-panel { padding: 12px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .search-bar { display: flex; gap: 8px; }
+  .search-bar input { flex: 1; padding: 12px; font-size: 1em; border: 1px solid #bbb; border-radius: 4px; }
+  .search-bar button { padding: 12px 20px; font-size: 1em; background: #2f4f3f; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  #info-card { display: none; margin-bottom: 10px; }
+  #info-card.visible { display: block; }
+  #info-card .name { font-size: 1.2em; font-weight: 700; }
+  #info-card .field { font-size: 0.95em; color: #444; margin-top: 2px; }
+  #info-card .badge { color: white; font-size: 0.75em; padding: 2px 8px; border-radius: 3px; display: inline-block; margin-top: 6px; }
+  #results { margin-top: 8px; max-height: 30vh; overflow-y: auto; }
+  .result-card { background: #f4f4f2; padding: 10px 12px; border-radius: 4px; margin-bottom: 6px; cursor: pointer; }
+  .result-card:hover, .result-card:active { background: #e9ece8; }
   .result-name { font-weight: 600; }
-  .badge { color: white; font-size: 0.75em; padding: 2px 7px; border-radius: 3px; margin-left: 8px; }
-  #map-wrap { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
-  #map { width: 100%; height: auto; display: block; }
-  .mapline { stroke: #333; stroke-width: 0.4; fill: none; }
-  .plot-marker { fill: #999; transition: r 0.2s, fill 0.2s; }
-  .plot-marker.highlight { fill: #c0392b; r: 4; }
   .empty-msg { color: #777; padding: 8px 0; }
   .loading-msg { color: #777; padding: 8px 0; }
+  #map-wrap { background: #fff; }
+  #map { width: 100%; height: auto; display: block; }
+  .fenceline { stroke: #333; stroke-width: 0.6; fill: none; }
+  .roadline { stroke: #1a1a1a; stroke-width: 9; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .plot-marker { fill: #aaa; }
+  .landmark rect { fill: white; stroke: #333; stroke-width: 0.8; }
+  .landmark-label { font-size: 8px; text-anchor: middle; fill: #222; font-weight: 600; }
+  .found-pin path { fill: #c0392b; stroke: white; stroke-width: 0.8; }
+  .found-pin-dot { fill: white; }
 </style>
 </head>
 <body>
 <header>
-  <svg width="30" height="30" viewBox="0 0 48 48" fill="none">
+  <svg width="26" height="26" viewBox="0 0 48 48" fill="none">
     <path d="M10 42 L10 18 Q10 6 24 6 Q38 6 38 18 L38 42" stroke="white" stroke-width="3.2" stroke-linecap="round" fill="none"/>
     <line x1="5" y1="42" x2="43" y2="42" stroke="white" stroke-width="3.2" stroke-linecap="round"/>
     <circle cx="24" cy="3.5" r="2.6" fill="white"/>
   </svg>
   <h1>Antioch Cemetery — Find a Plot</h1>
 </header>
-<main>
-  {% block content %}{% endblock %}
-</main>
+{% block content %}{% endblock %}
 <script>
 let PLOTS = null;
 
@@ -48,10 +55,29 @@ async function loadPlots() {
   return PLOTS;
 }
 
+function showInfoCard(num, p) {
+  const card = document.getElementById('info-card');
+  const name = [p.given_name, p.surname].filter(Boolean).join(' ') || '(name not yet on file)';
+  const badge = p.badge ? `<div class="badge" style="background:${p.badge.color}">${p.badge.label}</div>` : '';
+  card.innerHTML = `
+    <div class="field">Plot ${num}</div>
+    <div class="name">${name}</div>
+    ${p.dob ? `<div class="field">Date of Birth: ${p.dob}</div>` : ''}
+    ${p.dod ? `<div class="field">Date of Death: ${p.dod}</div>` : ''}
+    ${badge}
+  `;
+  card.classList.add('visible');
+}
+
+function hideInfoCard() {
+  document.getElementById('info-card').classList.remove('visible');
+}
+
 async function doSearch() {
   const q = document.getElementById('q').value.trim().toLowerCase();
   const resultsEl = document.getElementById('results');
-  document.querySelectorAll('.plot-marker.highlight').forEach(m => m.classList.remove('highlight'));
+  hidePin();
+  hideInfoCard();
   resultsEl.innerHTML = '';
   if (!q) return;
 
@@ -68,25 +94,41 @@ async function doSearch() {
     return;
   }
 
+  if (matches.length === 1) {
+    const [num, p] = matches[0];
+    showInfoCard(num, p);
+    showPin(num);
+    return;
+  }
+
   matches.forEach(([num, p]) => {
     const card = document.createElement('div');
     card.className = 'result-card';
     const name = [p.given_name, p.surname].filter(Boolean).join(' ') || '(name not yet on file)';
     const dates = [p.dob, p.dod].filter(Boolean).join(' – ');
-    const badge = p.badge ? `<span class="badge" style="background:${p.badge.color}">${p.badge.label}</span>` : '';
-    card.innerHTML = `<span class="result-name">${name}</span> — Plot #${num} ${dates ? '(' + dates + ')' : ''}${badge}`;
-    card.onclick = () => highlightPlot(num);
+    const badge = p.badge ? `<span style="color:${p.badge.color}; font-weight:600;">${p.badge.label}</span>` : '';
+    card.innerHTML = `<span class="result-name">${name}</span> — Plot ${num} ${dates ? '(' + dates + ')' : ''} ${badge}`;
+    card.onclick = () => {
+      resultsEl.innerHTML = '';
+      showInfoCard(num, p);
+      showPin(num);
+    };
     resultsEl.appendChild(card);
   });
-
-  if (matches.length === 1) highlightPlot(matches[0][0]);
 }
 
-function highlightPlot(num) {
-  document.querySelectorAll('.plot-marker.highlight').forEach(m => m.classList.remove('highlight'));
+function hidePin() {
+  document.getElementById('found-pin').setAttribute('visibility', 'hidden');
+}
+
+function showPin(num) {
   const marker = document.getElementById('plot-' + num);
+  const pin = document.getElementById('found-pin');
   if (!marker) return;
-  marker.classList.add('highlight');
+  const x = marker.getAttribute('cx');
+  const y = marker.getAttribute('cy');
+  pin.setAttribute('transform', `translate(${x},${y})`);
+  pin.setAttribute('visibility', 'visible');
   marker.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
 }
 
