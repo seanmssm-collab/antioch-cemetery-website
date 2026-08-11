@@ -4,17 +4,29 @@ landmarks, plot markers) embedded in templates/index.html. Plot names/
 dates are NOT baked in here -- those come live from /api/plots -- only
 positions, which rarely change.
 """
+import csv
 import json
 import sqlite3
 
 GEOJSON = "/Users/Shared/CemeteryCAD/Antioch/dxf_entities.geojson"
 DB_PATH = "/Users/Shared/CemeteryCAD/Antioch/app/cemetery.db"
+EXPANSION_FENCE_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_fence.csv"
+EXPANSION_ROAD_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_road.csv"
 OUT = "/Users/Shared/CemeteryCAD/Antioch/public_site/map_fragment.txt"
+
+# where the driveway starts (entrance fork) -- anchor for the "ROAD" label
+ROAD_LABEL_POS = (3273667.0, 6745740.0)
 
 LANDMARKS = [
     ("Gazebo", 3273993.60, 6745749.80),
     ("Pavilion", 3273864.94, 6746057.38),
 ]
+
+# The original 2015 survey's north fence edge is being physically removed --
+# the cemetery's real boundary is now 70ft further north (the expansion).
+# Drop this exact segment from the original FENCE polyline; the new
+# boundary line (read from expansion_fence.csv below) replaces it.
+OLD_NORTH_EDGE = {(3273986.072, 6745922.554), (3273614.205, 6745925.146)}
 
 d = json.load(open(GEOJSON))
 fence_lines = []
@@ -27,7 +39,25 @@ for f in d["features"]:
     parts = geom["coordinates"] if geom["type"] == "MultiLineString" else [geom["coordinates"]]
     for part in parts:
         pts = [(x, y) for x, y, *_ in part]
-        (fence_lines if layer == "FENCE" else road_lines).append(pts)
+        if layer == "ROAD":
+            road_lines.append(pts)
+            continue
+        # split the fence polyline into individual segments so the old
+        # north edge can be dropped without losing the rest of the fence
+        for a, b in zip(pts, pts[1:]):
+            if {a, b} == OLD_NORTH_EDGE:
+                continue
+            fence_lines.append([a, b])
+
+# the new north boundary (70ft expansion), replacing the old edge above
+with open(EXPANSION_FENCE_CSV) as ef:
+    new_boundary = [(float(r["X"]), float(r["Y"])) for r in csv.DictReader(ef)]
+fence_lines.append(new_boundary)
+
+# the driveway extension north through the expansion, up past the pavilion
+with open(EXPANSION_ROAD_CSV) as rf:
+    road_ext = [(float(r["X"]), float(r["Y"])) for r in csv.DictReader(rf)]
+road_lines.append(road_ext)
 
 conn = sqlite3.connect(DB_PATH)
 plots = conn.execute("SELECT plot_number, survey_x, survey_y FROM plots WHERE survey_x IS NOT NULL").fetchall()
@@ -73,6 +103,9 @@ for name, x, y in LANDMARKS:
     )
 landmarks_svg = "\n".join(landmark_svg)
 
+rlx, rly = to_svg(*ROAD_LABEL_POS)
+road_label_svg = f'<text x="{rlx:.2f}" y="{rly:.2f}" class="road-label">ROAD</text>'
+
 with open(OUT, "w") as f:
     f.write(f"VIEWBOX=0 0 {W:.2f} {H:.2f}\n")
     f.write("FENCE\n")
@@ -81,6 +114,8 @@ with open(OUT, "w") as f:
     f.write(road_paths)
     f.write("\nLANDMARKS\n")
     f.write(landmarks_svg)
+    f.write("\nROADLABEL\n")
+    f.write(road_label_svg)
     f.write("\nMARKERS\n")
     f.write(markers_svg)
 
