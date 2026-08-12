@@ -20,9 +20,10 @@ OUT = "/Users/Shared/CemeteryCAD/Antioch/public_site/map_fragment.txt"
 ROAD_LABEL_POS = (3273667.0, 6745736.0)
 
 LANDMARKS = [
-    ("Gazebo", 3273993.60, 6745749.80),
+    ("Gazebo", 3273980.0, 6745729.80),
     ("Pavilion", 3273864.94, 6746057.38),
 ]
+LANDMARK_BOX = 20.0  # ft on a side -- matches one full grid box on the reference map
 
 # The original 2015 survey's north fence edge is being physically removed --
 # the cemetery's real boundary is now 70ft further north (the expansion).
@@ -99,8 +100,29 @@ def path_for(lines):
         parts.append(dattr)
     return parts
 
+def smooth_path_for(lines):
+    """Catmull-Rom spline through each line's points, as SVG cubic beziers --
+    turns sharp angular corners into smooth rounded arcs. Used for the road,
+    which should read as a real curved driveway, not a surveyor's polyline."""
+    parts = []
+    for seg in lines:
+        pts = [to_svg(x, y) for x, y in seg]
+        if len(pts) < 3:
+            dattr = "M " + " L ".join(f"{px:.2f},{py:.2f}" for px, py in pts)
+            parts.append(dattr)
+            continue
+        padded = [pts[0]] + pts + [pts[-1]]
+        d = [f"M {pts[0][0]:.2f},{pts[0][1]:.2f}"]
+        for i in range(1, len(padded) - 2):
+            p0, p1, p2, p3 = padded[i - 1], padded[i], padded[i + 1], padded[i + 2]
+            b1 = (p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6)
+            b2 = (p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6)
+            d.append(f"C {b1[0]:.2f},{b1[1]:.2f} {b2[0]:.2f},{b2[1]:.2f} {p2[0]:.2f},{p2[1]:.2f}")
+        parts.append(" ".join(d))
+    return parts
+
 fence_paths = "\n".join(f'<path d="{p}" class="fenceline" />' for p in path_for(fence_lines))
-road_paths = "\n".join(f'<path d="{p}" class="roadline" />' for p in path_for(road_lines))
+road_paths = "\n".join(f'<path d="{p}" class="roadline" />' for p in smooth_path_for(road_lines))
 
 markers = []
 for num, x, y in plots:
@@ -109,12 +131,13 @@ for num, x, y in plots:
 markers_svg = "\n".join(markers)
 
 landmark_svg = []
+half = LANDMARK_BOX / 2
 for name, x, y in LANDMARKS:
     px, py = to_svg(x, y)
     landmark_svg.append(
         f'<g class="landmark" transform="translate({px:.2f},{py:.2f})">'
-        f'<rect x="-4" y="-4" width="8" height="8" />'
-        f'<text x="0" y="-6" class="landmark-label">{name}</text>'
+        f'<rect x="{-half:.1f}" y="{-half:.1f}" width="{LANDMARK_BOX:.1f}" height="{LANDMARK_BOX:.1f}" />'
+        f'<text x="0" y="{-half - 3:.1f}" class="landmark-label">{name}</text>'
         f'</g>'
     )
 landmarks_svg = "\n".join(landmark_svg)
