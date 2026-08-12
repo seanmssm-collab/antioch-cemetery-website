@@ -14,8 +14,10 @@ EXPANSION_FENCE_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_fence.csv"
 EXPANSION_ROAD_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_road.csv"
 OUT = "/Users/Shared/CemeteryCAD/Antioch/public_site/map_fragment.txt"
 
-# where the driveway starts (entrance fork) -- anchor for the "ROAD" label
-ROAD_LABEL_POS = (3273667.0, 6745740.0)
+# where the driveway starts (entrance fork) -- anchor for the "ROAD" label,
+# nudged down from the road's own coordinate so it sits between the two
+# edge lines rather than overlapping the top one
+ROAD_LABEL_POS = (3273667.0, 6745736.0)
 
 LANDMARKS = [
     ("Gazebo", 3273993.60, 6745749.80),
@@ -55,9 +57,14 @@ with open(EXPANSION_FENCE_CSV) as ef:
 fence_lines.append(new_boundary)
 
 # the driveway extension north through the expansion, up past the pavilion
+# (two parallel edges, matching the rest of the road)
+road_ext_a, road_ext_b = [], []
 with open(EXPANSION_ROAD_CSV) as rf:
-    road_ext = [(float(r["X"]), float(r["Y"])) for r in csv.DictReader(rf)]
-road_lines.append(road_ext)
+    for r in csv.DictReader(rf):
+        pt = (float(r["X"]), float(r["Y"]))
+        (road_ext_a if r["line"] == "A" else road_ext_b).append(pt)
+road_lines.append(road_ext_a)
+road_lines.append(road_ext_b)
 
 conn = sqlite3.connect(DB_PATH)
 plots = conn.execute("SELECT plot_number, survey_x, survey_y FROM plots WHERE survey_x IS NOT NULL").fetchall()
