@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-  <div id="top-panel">
-    <div id="info-card"></div>
-    <div class="search-bar">
-      <input type="text" id="q" placeholder="Search by name">
-      <button onclick="doSearch()">Search</button>
+  <div class="panel-row">
+    <div class="search-panel">
+      <div class="search-bar">
+        <input type="text" id="q" placeholder="Search by name">
+        <button onclick="doSearch()">Search</button>
+      </div>
     </div>
-    <div id="results"></div>
+    <div class="info-panel">
+      <div id="info-card"></div>
+      <div id="results"></div>
+    </div>
   </div>
   <div id="map-wrap">
     <svg viewBox="0 0 474.44 573.51" width="474.44" height="573.51" id="map">

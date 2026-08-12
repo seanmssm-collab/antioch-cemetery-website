@@ -27,13 +27,17 @@ markers_svg = markers_part.strip()
 template = (
     '{% extends "base.html" %}\n'
     "{% block content %}\n"
-    '  <div id="top-panel">\n'
-    '    <div id="info-card"></div>\n'
-    '    <div class="search-bar">\n'
-    '      <input type="text" id="q" placeholder="Search by name">\n'
-    '      <button onclick="doSearch()">Search</button>\n'
+    '  <div class="panel-row">\n'
+    '    <div class="search-panel">\n'
+    '      <div class="search-bar">\n'
+    '        <input type="text" id="q" placeholder="Search by name">\n'
+    '        <button onclick="doSearch()">Search</button>\n'
+    "      </div>\n"
     "    </div>\n"
-    '    <div id="results"></div>\n'
+    '    <div class="info-panel">\n'
+    '      <div id="info-card"></div>\n'
+    '      <div id="results"></div>\n'
+    "    </div>\n"
     "  </div>\n"
     '  <div id="map-wrap">\n'
     f'    <svg viewBox="{viewbox}" width="{w}" height="{h}" id="map">\n'
