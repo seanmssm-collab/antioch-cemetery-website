@@ -28,7 +28,16 @@ LANDMARKS = [
 # the cemetery's real boundary is now 70ft further north (the expansion).
 # Drop this exact segment from the original FENCE polyline; the new
 # boundary line (read from expansion_fence.csv below) replaces it.
-OLD_NORTH_EDGE = {(3273986.072, 6745922.554), (3273614.205, 6745925.146)}
+# Compared with a tolerance, not exact equality -- the literal floats here
+# don't match the GeoJSON's full precision, so a straight == silently
+# failed to match and left the old line on the map.
+OLD_NORTH_EDGE = [(3273986.072, 6745922.554), (3273614.205, 6745925.146)]
+
+def is_old_north_edge(a, b):
+    def close(p, q):
+        return abs(p[0] - q[0]) < 0.01 and abs(p[1] - q[1]) < 0.01
+    return (close(a, OLD_NORTH_EDGE[0]) and close(b, OLD_NORTH_EDGE[1])) or \
+           (close(a, OLD_NORTH_EDGE[1]) and close(b, OLD_NORTH_EDGE[0]))
 
 d = json.load(open(GEOJSON))
 fence_lines = []
@@ -47,7 +56,7 @@ for f in d["features"]:
         # split the fence polyline into individual segments so the old
         # north edge can be dropped without losing the rest of the fence
         for a, b in zip(pts, pts[1:]):
-            if {a, b} == OLD_NORTH_EDGE:
+            if is_old_north_edge(a, b):
                 continue
             fence_lines.append([a, b])
 
