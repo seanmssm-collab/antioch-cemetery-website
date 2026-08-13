@@ -134,9 +134,12 @@ async function doSearch() {
   const plots = await loadPlots();
   resultsEl.innerHTML = '';
 
-  const matches = Object.entries(plots).filter(([num, p]) =>
-    p.surname.toLowerCase().includes(q) || p.given_name.toLowerCase().includes(q) || num === q
-  );
+  const qWords = q.split(/\s+/).filter(Boolean);
+  const matches = Object.entries(plots).filter(([num, p]) => {
+    if (num === q) return true;
+    const fullName = `${p.given_name} ${p.surname}`.toLowerCase();
+    return qWords.length > 0 && qWords.every(w => fullName.includes(w));
+  });
 
   if (matches.length === 0) {
     resultsEl.innerHTML = '<div class="empty-msg">No matches found.</div>';
