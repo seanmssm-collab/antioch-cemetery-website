@@ -19,11 +19,12 @@ OUT = "/Users/Shared/CemeteryCAD/Antioch/public_site/map_fragment.txt"
 # edge lines rather than overlapping the top one
 ROAD_LABEL_POS = (3273667.0, 6745736.0)
 
+# name, X, Y, box size in ft (Pavilion is a real building -- full grid box;
+# Gazebo is small -- kept at its original size, just relocated)
 LANDMARKS = [
-    ("Gazebo", 3273980.0, 6745729.80),
-    ("Pavilion", 3273864.94, 6746057.38),
+    ("Gazebo", 3273980.0, 6745729.80, 8.0),
+    ("Pavilion", 3273864.94, 6746057.38, 20.0),
 ]
-LANDMARK_BOX = 20.0  # ft on a side -- matches one full grid box on the reference map
 
 # The original 2015 survey's north fence edge is being physically removed --
 # the cemetery's real boundary is now 70ft further north (the expansion).
@@ -81,8 +82,8 @@ plots = conn.execute("SELECT plot_number, survey_x, survey_y FROM plots WHERE su
 conn.close()
 
 all_lines = fence_lines + road_lines
-xs = [x for seg in all_lines for x, y in seg] + [p[1] for p in plots] + [lx for _, lx, ly in LANDMARKS]
-ys = [y for seg in all_lines for x, y in seg] + [p[2] for p in plots] + [ly for _, lx, ly in LANDMARKS]
+xs = [x for seg in all_lines for x, y in seg] + [p[1] for p in plots] + [lx for _, lx, ly, lb in LANDMARKS]
+ys = [y for seg in all_lines for x, y in seg] + [p[2] for p in plots] + [ly for _, lx, ly, lb in LANDMARKS]
 pad = 35
 minx, maxx = min(xs) - pad, max(xs) + pad
 miny, maxy = min(ys) - pad, max(ys) + pad
@@ -131,12 +132,12 @@ for num, x, y in plots:
 markers_svg = "\n".join(markers)
 
 landmark_svg = []
-half = LANDMARK_BOX / 2
-for name, x, y in LANDMARKS:
+for name, x, y, box in LANDMARKS:
     px, py = to_svg(x, y)
+    half = box / 2
     landmark_svg.append(
         f'<g class="landmark" transform="translate({px:.2f},{py:.2f})">'
-        f'<rect x="{-half:.1f}" y="{-half:.1f}" width="{LANDMARK_BOX:.1f}" height="{LANDMARK_BOX:.1f}" />'
+        f'<rect x="{-half:.1f}" y="{-half:.1f}" width="{box:.1f}" height="{box:.1f}" />'
         f'<text x="0" y="{-half - 3:.1f}" class="landmark-label">{name}</text>'
         f'</g>'
     )
