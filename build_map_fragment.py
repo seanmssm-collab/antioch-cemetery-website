@@ -17,7 +17,7 @@ OUT = "/Users/Shared/CemeteryCAD/Antioch/public_site/map_fragment.txt"
 # where the driveway starts (entrance fork) -- anchor for the "ROAD" label,
 # nudged down from the road's own coordinate so it sits between the two
 # edge lines rather than overlapping the top one
-ROAD_LABEL_POS = (3273667.0, 6745736.0)
+ROAD_LABEL_POS = (3273730.0, 6745736.0)
 
 # name, X, Y, box size in ft (Pavilion is a real building -- full grid box;
 # Gazebo is small -- kept at its original size, just relocated)
