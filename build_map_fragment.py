@@ -87,11 +87,17 @@ ys = [y for seg in all_lines for x, y in seg] + [p[2] for p in plots] + [ly for 
 pad = 35
 minx, maxx = min(xs) - pad, max(xs) + pad
 miny, maxy = min(ys) - pad, max(ys) + pad
-W = maxx - minx
-H = maxy - miny
+
+# Map is rotated 90 degrees clockwise from true north-up, to match the view
+# standing at the Gazebo looking out over the cemetery (client request,
+# 2026-08-14). This makes North point right, East point down, South point
+# left, West point up on screen -- see the COMPASS block below, which must
+# stay in sync with this rotation if it's ever changed again.
+W = maxy - miny
+H = maxx - minx
 
 def to_svg(x, y):
-    return x - minx, maxy - y
+    return y - miny, x - minx
 
 def path_for(lines):
     parts = []
@@ -146,6 +152,23 @@ landmarks_svg = "\n".join(landmark_svg)
 rlx, rly = to_svg(*ROAD_LABEL_POS)
 road_label_svg = f'<text x="{rlx:.2f}" y="{rly:.2f}" class="road-label">ROAD</text>'
 
+# Compass rose -- directions match the 90-degree-clockwise rotation above:
+# N is now screen-right, E is screen-down, S is screen-left, W is screen-up.
+ccx, ccy, cr = 18, 18, 9
+compass_svg = (
+    f'<g class="compass" transform="translate({ccx},{ccy})">'
+    f'<circle r="{cr}" />'
+    f'<line x1="0" y1="0" x2="{cr}" y2="0" class="compass-north" />'
+    f'<line x1="0" y1="0" x2="0" y2="{cr}" />'
+    f'<line x1="0" y1="0" x2="{-cr}" y2="0" />'
+    f'<line x1="0" y1="0" x2="0" y2="{-cr}" />'
+    f'<text x="{cr + 4}" y="0" class="compass-label compass-north-label">N</text>'
+    f'<text x="0" y="{cr + 9}" class="compass-label">E</text>'
+    f'<text x="{-cr - 4}" y="0" class="compass-label">S</text>'
+    f'<text x="0" y="{-cr - 4}" class="compass-label">W</text>'
+    f'</g>'
+)
+
 with open(OUT, "w") as f:
     f.write(f"VIEWBOX=0 0 {W:.2f} {H:.2f}\n")
     f.write("FENCE\n")
@@ -156,6 +179,8 @@ with open(OUT, "w") as f:
     f.write(landmarks_svg)
     f.write("\nROADLABEL\n")
     f.write(road_label_svg)
+    f.write("\nCOMPASS\n")
+    f.write(compass_svg)
     f.write("\nMARKERS\n")
     f.write(markers_svg)
 
