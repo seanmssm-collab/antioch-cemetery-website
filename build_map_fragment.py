@@ -14,10 +14,10 @@ EXPANSION_FENCE_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_fence.csv"
 EXPANSION_ROAD_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_road.csv"
 OUT = "/Users/Shared/CemeteryCAD/Antioch/public_site/map_fragment.txt"
 
-# where the driveway starts (entrance fork) -- anchor for the "ROAD" label,
-# nudged down from the road's own coordinate so it sits between the two
-# edge lines rather than overlapping the top one
-ROAD_LABEL_POS = (3273730.0, 6745736.0)
+# centered between the road's two edges at the bend where it curves east,
+# per client request (2026-08-15) -- previously sat further west, off the
+# actual pavement
+ROAD_LABEL_POS = (3273869.6, 6745731.9)
 
 # name, X, Y, box size in ft (Pavilion is a real building -- full grid box;
 # Gazebo is small -- kept at its original size, just relocated)
