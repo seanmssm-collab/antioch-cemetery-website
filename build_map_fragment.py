@@ -14,10 +14,11 @@ EXPANSION_FENCE_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_fence.csv"
 EXPANSION_ROAD_CSV = "/Users/Shared/CemeteryCAD/Antioch/expansion_road.csv"
 OUT = "/Users/Shared/CemeteryCAD/Antioch/public_site/map_fragment.txt"
 
-# centered between the road's two edges at the bend where it curves east,
-# per client request (2026-08-15) -- previously sat further west, off the
-# actual pavement
-ROAD_LABEL_POS = (3273869.6, 6745731.9)
+# positioned per client's exact grid-reference pick on a screenshot of the
+# live map (column 9, just below row 13, nudged down a bit further and
+# rotated -3deg / counterclockwise), 2026-08-15
+ROAD_LABEL_POS = (3273978.6, 6745827.8)
+ROAD_LABEL_ROTATION = -3
 
 # name, X, Y, box size in ft (Pavilion is a real building -- full grid box;
 # Gazebo is small -- kept at its original size, just relocated)
@@ -150,7 +151,10 @@ for name, x, y, box in LANDMARKS:
 landmarks_svg = "\n".join(landmark_svg)
 
 rlx, rly = to_svg(*ROAD_LABEL_POS)
-road_label_svg = f'<text x="{rlx:.2f}" y="{rly:.2f}" class="road-label">ROAD</text>'
+road_label_svg = (
+    f'<text x="{rlx:.2f}" y="{rly:.2f}" class="road-label" '
+    f'transform="rotate({ROAD_LABEL_ROTATION} {rlx:.2f} {rly:.2f})">ROAD</text>'
+)
 
 # Compass rose -- directions match the 90-degree-clockwise rotation above:
 # N is now screen-right, E is screen-down, S is screen-left, W is screen-up.
