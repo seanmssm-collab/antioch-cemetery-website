@@ -78,15 +78,18 @@
   #map { width: 100%; height: auto; display: block; }
   .fenceline { stroke: var(--ink); stroke-width: 0.7; fill: none; }
   .roadline { stroke: var(--ink); stroke-width: 0.5; fill: none; opacity: 0.75; }
-  /* Every plot is a square. Vacant ones carry their plot number; occupied
-     ones get the surname written in, swapped in from /api/plots on load. */
-  .plot-marker { fill: #ffffff; stroke: var(--ink); stroke-width: 0.25; }
-  .plot-marker.occupied { fill: var(--cream-deep); stroke-width: 0.35; }
+  /* Only occupied graves show. Every plot still exists in the page, hidden,
+     so the moment a burial is recorded that square appears on the next load
+     -- but vacant ground stays clear on the public map. */
+  .plot-marker { display: none; fill: var(--cream-deep); stroke: var(--ink); stroke-width: 0.35; }
+  .plot-marker.occupied { display: inline; }
   .plot-label {
+    display: none;
     font-family: 'EB Garamond', serif; font-size: 1.5px; text-anchor: middle;
-    dominant-baseline: central; fill: #9a9186; pointer-events: none;
+    dominant-baseline: central; fill: var(--ink-deep); font-weight: 600;
+    pointer-events: none;
   }
-  .plot-label.occupied { fill: var(--ink-deep); font-weight: 600; }
+  .plot-label.occupied { display: inline; }
   .landmark rect { fill: var(--cream); stroke: var(--gold); stroke-width: 1; }
   .landmark-label { font-family: 'EB Garamond', serif; font-size: 8.5px; text-anchor: middle; fill: var(--ink-deep); font-weight: 600; }
   .road-label { font-family: 'EB Garamond', serif; font-size: 9px; fill: var(--ink); font-style: italic; }
