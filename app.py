@@ -57,6 +57,22 @@ def run_migrations():
 run_migrations()
 
 
+@app.after_request
+def no_stale_records(resp):
+    """Never let a browser hold onto the page or the plot data.
+
+    Both are generated from the live database, so a cached copy means the
+    association records a burial and the map doesn't change for them. Static
+    files -- the logo, the fonts -- are left alone and still cache normally.
+    """
+    if request.path.startswith("/static/"):
+        return resp
+    resp.headers["Cache-Control"] = "no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
