@@ -89,16 +89,19 @@ pad = 35
 minx, maxx = min(xs) - pad, max(xs) + pad
 miny, maxy = min(ys) - pad, max(ys) + pad
 
-# Map is rotated 90 degrees clockwise from true north-up, to match the view
-# standing at the Gazebo looking out over the cemetery (client request,
-# 2026-08-14). This makes North point right, East point down, South point
-# left, West point up on screen -- see the COMPASS block below, which must
-# stay in sync with this rotation if it's ever changed again.
-W = maxy - miny
-H = maxx - minx
+# North is up. The map used to be rotated 90 degrees to the gazebo viewpoint,
+# but the illustrated background (build_site_map_base.py) is drawn north-up
+# and carries its own gazebo marker, so the drawing and the plot overlay have
+# to agree. Bounds come from the background image, not from the plots.
+import json as _json
+_b = _json.load(open(OUT.replace("map_fragment.txt", "static/map_base_bounds.json")))
+minx, maxx = _b["x0"], _b["x1"]
+miny, maxy = _b["y0"], _b["y1"]
+W = maxx - minx
+H = maxy - miny
 
 def to_svg(x, y):
-    return y - miny, x - minx
+    return x - minx, maxy - y
 
 def path_for(lines):
     parts = []
@@ -128,6 +131,11 @@ def smooth_path_for(lines):
             d.append(f"C {b1[0]:.2f},{b1[1]:.2f} {b2[0]:.2f},{b2[1]:.2f} {p2[0]:.2f},{p2[1]:.2f}")
         parts.append(" ".join(d))
     return parts
+
+base_image = (
+    '<image href="/static/map_base.png" x="0" y="0" '
+    f'width="{W:.2f}" height="{H:.2f}" preserveAspectRatio="none" />'
+)
 
 fence_paths = "\n".join(f'<path d="{p}" class="fenceline" />' for p in path_for(fence_lines))
 road_paths = "\n".join(f'<path d="{p}" class="roadline" />' for p in smooth_path_for(road_lines))
@@ -194,15 +202,15 @@ compass_svg = (
 with open(OUT, "w") as f:
     f.write(f"VIEWBOX=0 0 {W:.2f} {H:.2f}\n")
     f.write("FENCE\n")
-    f.write(fence_paths)
+    f.write(base_image)
     f.write("\nROAD\n")
-    f.write(road_paths)
+    f.write("")
     f.write("\nLANDMARKS\n")
-    f.write(landmarks_svg)
+    f.write("")
     f.write("\nROADLABEL\n")
-    f.write(road_label_svg)
+    f.write("")
     f.write("\nCOMPASS\n")
-    f.write(compass_svg)
+    f.write("")
     f.write("\nMARKERS\n")
     f.write(markers_svg)
 
