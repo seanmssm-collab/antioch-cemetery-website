@@ -144,7 +144,12 @@ async function showOccupiedPlots() {
     marker.classList.add('occupied');
     const label = document.getElementById('plot-label-' + marker.id.slice(5));
     if (label) {
-      label.textContent = (p.surname || p.given_name || '').trim();
+      // Field rule 2: a numbered plaque with no name. The plaque number
+      // lives in given_name and is what identifies the grave.
+      const sn = (p.surname || '').trim();
+      label.textContent = sn === 'Unknown'
+        ? ('No. ' + (p.given_name || '').trim()).trim()
+        : (sn || (p.given_name || '').trim());
       label.classList.add('occupied');
     }
   }
