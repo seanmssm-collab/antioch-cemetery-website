@@ -16,6 +16,11 @@ ALTER TABLE plots ADD COLUMN IF NOT EXISTS date_of_burial TEXT;
 ALTER TABLE plots ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE plots ADD COLUMN IF NOT EXISTS headstone_photo BYTEA;
 ALTER TABLE plots ADD COLUMN IF NOT EXISTS headstone_photo_filename TEXT;
+-- The surveyed position of each plot. Not shown publicly, but without it a
+-- rebuild from this database would restore the people and lose the map, so
+-- it belongs in the off-site copy.
+ALTER TABLE plots ADD COLUMN IF NOT EXISTS survey_x DOUBLE PRECISION;
+ALTER TABLE plots ADD COLUMN IF NOT EXISTS survey_y DOUBLE PRECISION;
 """
 
 VETERAN_BADGES = {
@@ -128,6 +133,13 @@ def api_sync():
     if not plot_number.isdigit():
         return jsonify({"error": "plot_number required"}), 400
 
+    def _num(name):
+        v = request.form.get(name, "").strip()
+        try:
+            return float(v)
+        except ValueError:
+            return None
+
     fields = {
         "surname": request.form.get("surname", "").strip(),
         "given_name": request.form.get("given_name", "").strip(),
@@ -136,6 +148,8 @@ def api_sync():
         "date_of_burial": request.form.get("date_of_burial", "").strip(),
         "veteran_branch": request.form.get("veteran_branch", "").strip(),
         "notes": request.form.get("notes", "").strip(),
+        "survey_x": _num("survey_x"),
+        "survey_y": _num("survey_y"),
     }
 
     photo = request.files.get("headstone_photo")
@@ -151,29 +165,31 @@ def api_sync():
         if exists:
             cur.execute(
                 """UPDATE plots SET surname=%s, given_name=%s, date_of_birth=%s, date_of_death=%s,
-                   date_of_burial=%s, veteran_branch=%s, notes=%s, headstone_photo=%s,
-                   headstone_photo_filename=%s WHERE plot_number=%s""",
+                   date_of_burial=%s, veteran_branch=%s, notes=%s, survey_x=%s, survey_y=%s,
+                   headstone_photo=%s, headstone_photo_filename=%s WHERE plot_number=%s""",
                 (*fields.values(), photo_bytes, photo_filename, plot_number),
             )
         else:
             cur.execute(
                 """INSERT INTO plots (plot_number, surname, given_name, date_of_birth, date_of_death,
-                   date_of_burial, veteran_branch, notes, headstone_photo, headstone_photo_filename)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                   date_of_burial, veteran_branch, notes, survey_x, survey_y,
+                   headstone_photo, headstone_photo_filename)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                 (plot_number, *fields.values(), photo_bytes, photo_filename),
             )
     else:
         if exists:
             cur.execute(
                 """UPDATE plots SET surname=%s, given_name=%s, date_of_birth=%s, date_of_death=%s,
-                   date_of_burial=%s, veteran_branch=%s, notes=%s WHERE plot_number=%s""",
+                   date_of_burial=%s, veteran_branch=%s, notes=%s, survey_x=%s, survey_y=%s
+                   WHERE plot_number=%s""",
                 (*fields.values(), plot_number),
             )
         else:
             cur.execute(
                 """INSERT INTO plots (plot_number, surname, given_name, date_of_birth, date_of_death,
-                   date_of_burial, veteran_branch, notes)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                   date_of_burial, veteran_branch, notes, survey_x, survey_y)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                 (plot_number, *fields.values()),
             )
     conn.commit()
