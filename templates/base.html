@@ -97,6 +97,7 @@
   .compass-north-label { fill: var(--maroon); }
   .found-pin path { fill: var(--maroon); stroke: var(--cream); stroke-width: 0.8; }
   .found-pin-dot { fill: var(--cream); }
+  .build-stamp { text-align: center; font-size: 0.72em; color: #a79f93; margin: 10px 0 18px; letter-spacing: 0.04em; }
 </style>
 </head>
 <body>
@@ -107,6 +108,7 @@
 <main>
   {% block content %}{% endblock %}
 </main>
+<p class="build-stamp">map build {{ build }} · {{ build_at }}</p>
 <script>
 let PLOTS = null;
 

@@ -1,6 +1,7 @@
 import hmac
 import os
 import re
+from datetime import datetime
 import psycopg2
 import psycopg2.extras
 from flask import Flask, render_template, jsonify, request
@@ -73,9 +74,15 @@ def no_stale_records(resp):
     return resp
 
 
+# Stamped on the page so it's obvious at a glance whether a browser is
+# showing the current build or a cached copy of an older one.
+BUILD = (os.environ.get("RENDER_GIT_COMMIT", "") or "local")[:7]
+BUILD_AT = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", build=BUILD, build_at=BUILD_AT)
 
 
 @app.route("/api/plots")
