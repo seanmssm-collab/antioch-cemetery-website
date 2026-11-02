@@ -78,7 +78,15 @@
   #map { width: 100%; height: auto; display: block; }
   .fenceline { stroke: var(--ink); stroke-width: 0.7; fill: none; }
   .roadline { stroke: var(--ink); stroke-width: 0.5; fill: none; opacity: 0.75; }
-  .plot-marker { fill: var(--plot-dot); }
+  /* Every plot is a square. Vacant ones carry their plot number; occupied
+     ones get the surname written in, swapped in from /api/plots on load. */
+  .plot-marker { fill: #ffffff; stroke: var(--ink); stroke-width: 0.25; }
+  .plot-marker.occupied { fill: var(--cream-deep); stroke-width: 0.35; }
+  .plot-label {
+    font-family: 'EB Garamond', serif; font-size: 1.5px; text-anchor: middle;
+    dominant-baseline: central; fill: #9a9186; pointer-events: none;
+  }
+  .plot-label.occupied { fill: var(--ink-deep); font-weight: 600; }
   .landmark rect { fill: var(--cream); stroke: var(--gold); stroke-width: 1; }
   .landmark-label { font-family: 'EB Garamond', serif; font-size: 8.5px; text-anchor: middle; fill: var(--ink-deep); font-weight: 600; }
   .road-label { font-family: 'EB Garamond', serif; font-size: 9px; fill: var(--ink); font-style: italic; }
@@ -107,6 +115,39 @@ async function loadPlots() {
   const resp = await fetch('/api/plots');
   PLOTS = await resp.json();
   return PLOTS;
+}
+
+function hasName(p) {
+  return !!((p.surname || '').trim() || (p.given_name || '').trim());
+}
+
+// Everyone on a double/triple stone shares one surveyed point, so they all
+// resolve to the same square: whichever plot the server says the pin lives on.
+function markerFor(num, p) {
+  const at = (p && p.at) || num;
+  return document.getElementById('plot-' + at) || document.getElementById('plot-' + num);
+}
+
+// Write the surname into every occupied square. Vacant squares keep the
+// plot number they were built with.
+async function showOccupiedPlots() {
+  let plots;
+  try {
+    plots = await loadPlots();
+  } catch (e) {
+    return;   // squares keep their plot numbers rather than showing nothing
+  }
+  for (const [num, p] of Object.entries(plots)) {
+    if (!hasName(p)) continue;
+    const marker = markerFor(num, p);
+    if (!marker) continue;
+    marker.classList.add('occupied');
+    const label = document.getElementById('plot-label-' + marker.id.slice(5));
+    if (label) {
+      label.textContent = (p.surname || p.given_name || '').trim();
+      label.classList.add('occupied');
+    }
+  }
 }
 
 function showInfoCard(num, p) {
@@ -154,7 +195,7 @@ async function doSearch() {
   if (matches.length === 1) {
     const [num, p] = matches[0];
     showInfoCard(num, p);
-    showPin(num);
+    showPin(num, p);
     return;
   }
 
@@ -168,7 +209,7 @@ async function doSearch() {
     card.onclick = () => {
       resultsEl.innerHTML = '';
       showInfoCard(num, p);
-      showPin(num);
+      showPin(num, p);
     };
     resultsEl.appendChild(card);
   });
@@ -178,12 +219,12 @@ function hidePin() {
   document.getElementById('found-pin').setAttribute('visibility', 'hidden');
 }
 
-function showPin(num) {
-  const marker = document.getElementById('plot-' + num);
+function showPin(num, p) {
+  const marker = markerFor(num, p);
   const pin = document.getElementById('found-pin');
   if (!marker) return;
-  const x = marker.getAttribute('cx');
-  const y = marker.getAttribute('cy');
+  const x = marker.getAttribute('data-cx') || marker.getAttribute('cx');
+  const y = marker.getAttribute('data-cy') || marker.getAttribute('cy');
   pin.setAttribute('transform', `translate(${x},${y})`);
   pin.setAttribute('visibility', 'visible');
   marker.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
@@ -192,6 +233,7 @@ function showPin(num) {
 document.addEventListener('DOMContentLoaded', () => {
   const q = document.getElementById('q');
   if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+  showOccupiedPlots();
 });
 </script>
 </body>

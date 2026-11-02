@@ -1,5 +1,6 @@
 import hmac
 import os
+import re
 import psycopg2
 import psycopg2.extras
 from flask import Flask, render_template, jsonify, request
@@ -25,6 +26,19 @@ VETERAN_BADGES = {
     "Coast Guard": ("US Coast Guard Veteran", "#003366"),
     "Space Force": ("US Space Force Veteran", "#1C2951"),
 }
+
+
+# A double/triple stone is one surveyed point but several burial records. The
+# extra records are stored without coordinates of their own and carry a note
+# "[shares the survey point of plot N]" pointing back at the marked one. Only
+# the plot number is published -- the note text itself stays private.
+SHARED_POINT_RE = re.compile(r"shares the survey point of plot (\d+)")
+
+
+def shared_point(row):
+    """Which plot's map marker this record should drop its pin on."""
+    m = SHARED_POINT_RE.search(row.get("notes") or "")
+    return int(m.group(1)) if m else row["plot_number"]
 
 
 def get_conn():
@@ -53,7 +67,8 @@ def api_plots():
     conn = get_conn()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute(
-        "SELECT plot_number, surname, given_name, date_of_birth, date_of_death, veteran_branch FROM plots"
+        "SELECT plot_number, surname, given_name, date_of_birth, date_of_death, "
+        "veteran_branch, notes FROM plots"
     )
     rows = cur.fetchall()
     cur.close()
@@ -68,6 +83,8 @@ def api_plots():
             "dob": str(r["date_of_birth"] or ""),
             "dod": str(r["date_of_death"] or ""),
             "badge": {"label": badge[0], "color": badge[1]} if badge else None,
+            # Everyone on a shared stone points at the one surveyed position.
+            "at": shared_point(r),
         }
     return jsonify(data)
 

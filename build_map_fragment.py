@@ -132,10 +132,28 @@ def smooth_path_for(lines):
 fence_paths = "\n".join(f'<path d="{p}" class="fenceline" />' for p in path_for(fence_lines))
 road_paths = "\n".join(f'<path d="{p}" class="roadline" />' for p in smooth_path_for(road_lines))
 
+# Every surveyed plot gets a square, vacant or occupied. The label baked in
+# here is the plot number; base.html swaps it for the surname on any plot
+# /api/plots reports a name for, and marks it occupied. So a newly recorded
+# burial turns its number into a name with no redeploy.
+# data-cx/data-cy carry the centre so showPin() works on a rect.
+MARKER = 4.2
 markers = []
 for num, x, y in plots:
     px, py = to_svg(x, y)
-    markers.append(f'<circle class="plot-marker" id="plot-{num}" cx="{px:.2f}" cy="{py:.2f}" r="1.4" />')
+    markers.append(
+        f'<g class="plot-cell">'
+        f'<rect class="plot-marker" id="plot-{num}" '
+        f'x="{px - MARKER / 2:.2f}" y="{py - MARKER / 2:.2f}" '
+        f'width="{MARKER}" height="{MARKER}" '
+        f'data-cx="{px:.2f}" data-cy="{py:.2f}" />'
+        # textLength squeezes a long surname down into its own square instead
+        # of letting it sprawl across the neighbours
+        f'<text class="plot-label" id="plot-label-{num}" '
+        f'x="{px:.2f}" y="{py:.2f}" '
+        f'textLength="{MARKER * 0.88:.2f}" lengthAdjust="spacingAndGlyphs">'
+        f'{num}</text>'
+        f'</g>')
 markers_svg = "\n".join(markers)
 
 landmark_svg = []
