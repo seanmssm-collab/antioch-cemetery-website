@@ -32,7 +32,11 @@ template = (
     '  <div class="panel-row">\n'
     '    <div class="search-panel">\n'
     '      <div class="search-bar">\n'
-    '        <input type="text" id="q" placeholder="Search by name">\n'
+    '        <div class="search-field">\n'
+    '          <input type="text" id="q" placeholder="Search by name">\n'
+    '          <button type="button" id="clear-search" class="clear-btn"\n'
+    '                  aria-label="Clear search" onclick="clearSearch()">&times;</button>\n'
+    "        </div>\n"
     '        <button onclick="doSearch()">Search</button>\n'
     "      </div>\n"
     "    </div>\n"

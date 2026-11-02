@@ -3,7 +3,11 @@
   <div class="panel-row">
     <div class="search-panel">
       <div class="search-bar">
-        <input type="text" id="q" placeholder="Search by name">
+        <div class="search-field">
+          <input type="text" id="q" placeholder="Search by name">
+          <button type="button" id="clear-search" class="clear-btn"
+                  aria-label="Clear search" onclick="clearSearch()">&times;</button>
+        </div>
         <button onclick="doSearch()">Search</button>
       </div>
     </div>

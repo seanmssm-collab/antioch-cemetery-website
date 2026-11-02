@@ -39,10 +39,27 @@
   }
   .search-panel, .info-panel { min-width: 0; }
   .search-bar { display: flex; gap: 8px; }
+  .search-field { position: relative; flex: 1; display: flex; }
   .search-bar input {
-    flex: 1; padding: 12px 14px; font-size: 1.05em; font-family: inherit;
+    flex: 1; padding: 12px 38px 12px 14px; font-size: 1.05em; font-family: inherit;
     border: 1px solid var(--gold); border-radius: 3px; background: white; color: var(--ink-deep);
+    width: 100%;
   }
+  /* Clear button, inside the field. Selectors are scoped to .search-bar so
+     they beat the `.search-bar button` rule, which otherwise gives this the
+     Search button's padding and dark fill. Only appears once there's
+     something to clear. */
+  .search-bar .clear-btn {
+    position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+    display: none; width: 25px; height: 25px; min-width: 25px;
+    padding: 0; margin: 0; line-height: 1; letter-spacing: 0;
+    font-family: Georgia, serif; font-size: 20px; font-weight: 400;
+    border: none; border-radius: 50%; cursor: pointer;
+    background: #e6ded0; color: #5b5346;
+  }
+  .search-bar .clear-btn:hover,
+  .search-bar .clear-btn:active { background: var(--gold); color: var(--cream); }
+  .search-bar .clear-btn.visible { display: flex; align-items: center; justify-content: center; }
   .search-bar input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
   .search-bar button {
     padding: 12px 22px; font-size: 1em; font-family: 'Playfair Display', Georgia, serif; font-weight: 600;
@@ -186,6 +203,7 @@ async function doSearch() {
   resultsEl.innerHTML = '';
   if (!q) return;
 
+  syncClearButton();
   resultsEl.innerHTML = '<div class="loading-msg">Searching...</div>';
   const plots = await loadPlots();
   resultsEl.innerHTML = '';
@@ -225,6 +243,23 @@ async function doSearch() {
   });
 }
 
+// Wipe the search and everything it put on the page, ready for the next one.
+function clearSearch() {
+  const q = document.getElementById('q');
+  q.value = '';
+  document.getElementById('results').innerHTML = '';
+  hideInfoCard();
+  hidePin();
+  syncClearButton();
+  q.focus();
+}
+
+function syncClearButton() {
+  const btn = document.getElementById('clear-search');
+  if (!btn) return;
+  btn.classList.toggle('visible', document.getElementById('q').value.trim() !== '');
+}
+
 function hidePin() {
   document.getElementById('found-pin').setAttribute('visibility', 'hidden');
 }
@@ -242,7 +277,11 @@ function showPin(num, p) {
 
 document.addEventListener('DOMContentLoaded', () => {
   const q = document.getElementById('q');
-  if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+  if (q) {
+    q.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+    q.addEventListener('input', syncClearButton);
+  }
+  syncClearButton();
   showOccupiedPlots();
 });
 </script>
